@@ -45,6 +45,9 @@ class DNSClient:
         parse_question(reader)
         parse_record(reader)
 
+        ip = packet.answers[0].data
+        full_ip = ".".join([str(x) for x in ip])
+
         print(f"server: {self.server}\nname: {self.name}\ntimeout: {self.timeout}\nmax_retries: {self.max_retries}\nport: {self.port}\nquery: {self.query_type}")
         
 

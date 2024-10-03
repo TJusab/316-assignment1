@@ -1,8 +1,10 @@
 from header import Header
 from question import Question
 from record import Record
+from packet import Packet
 import random
 import struct
+from io import BytesIO
 
 
 def encode_name(domain_name):
@@ -19,7 +21,7 @@ def decode_name(reader):
     while (length := reader.read(1)[0]) != 0:
         if length & 0b1100_000:
             parts.append(decode_compressed(length, reader))
-            break;
+            break
         else:
             parts.append(reader.read(length))
 
@@ -60,6 +62,16 @@ def parse_record(reader):
 
     data = reader.read(data_len)
     return Record(name, type_,class_, ttl, data)
+
+def parse_packet(data):
+    reader = BytesIO(data)
+    header = parse_header(reader)
+    questions = [parse_question(reader) for _ in range(header.num_questions)]
+    answers = [parse_record(reader) for _ in range(header.num_answers)]
+    authorities = [parse_record(reader) for _ in range(header.num_authorities)]
+    additionals = [parse_record(reader) for _ in range(header.num_additionals)]
+
+    return Packet(header, questions, answers, authorities, additionals)
 
 
 
