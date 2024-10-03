@@ -44,6 +44,7 @@ class DNSClient:
         parse_header(reader)
         parse_question(reader)
         parse_record(reader)
+        packet = parse_packet(response)
 
         ip = packet.answers[0].data
         full_ip = ".".join([str(x) for x in ip])
