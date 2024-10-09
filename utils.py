@@ -18,13 +18,14 @@ def encode_name(domain_name):
 
 def decode_name(reader):
     parts = []
-    print(reader)
     while (length := reader.read(1)[0]) != 0:
         if length & 0b1100_000:
             parts.append(decode_compressed(length, reader))
             break
         else:
             parts.append(reader.read(length))
+        
+    return parts
 
 def decode_compressed(length, reader):
     pointer_bytes = bytes([length & 0b0011_1111]) + reader.read(1)
@@ -47,13 +48,18 @@ def build_query(domain_name, record_type):
 
 def parse_header(response):
     #read 12 bytes from the stream because header is 12 bytes
+    
     identifier, flags, num_qs, nums_as, num_auths, num_adds = struct.unpack("!HHHHHH", response.read(12))
+    print("number of answers", nums_as)
     return Header(identifier=identifier, flags=flags, num_qs=num_qs, nums_as=nums_as, num_auths=num_auths, num_adds=num_adds)
 
 def parse_question(reader):
     name = decode_name(reader)
     data = reader.read(4)
     type_, class_ = struct.unpack("!HH", data)
+    print("name from parse_question", name)
+    print("type", type_)
+    print("class", class_)
     return Question(name, type_, class_)
 
 def parse_record(reader):
@@ -68,10 +74,12 @@ def parse_record(reader):
 def parse_packet(data):
     reader = BytesIO(data)
     header = parse_header(reader)
-    questions = [parse_question(reader) for _ in range(header.num_questions)]
-    answers = [parse_record(reader) for _ in range(header.num_answers)]
-    authorities = [parse_record(reader) for _ in range(header.num_authorities)]
-    additionals = [parse_record(reader) for _ in range(header.num_additionals)]
+    header.parse_flags()
+    print(header.error_flags())
+    questions = [parse_question(reader) for _ in range(header.num_qs)]
+    answers = [parse_record(reader) for _ in range(header.nums_as)]
+    authorities = [parse_record(reader) for _ in range(header.num_auths)]
+    additionals = [parse_record(reader) for _ in range(header.num_adds)]
 
     return Packet(header, questions, answers, authorities, additionals)
 

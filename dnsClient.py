@@ -41,20 +41,15 @@ class DNSClient:
             response, _ = sock.recvfrom(1024)  # Receive the response from the DNS server
             print("response", response)
             
-            reader = BytesIO(response)
-            header = parse_header(reader)
-            header.parse_flags()
-            print(header.error_flags())
+            packet = parse_packet(response)
 
-            #parse_question(reader)
-            #records = parse_record(reader)
-            
-            #packet = parse_packet(response)
+            for answer in packet.answers:
+                    if answer.type_ == 1:  # Check if the answer type is A (IPv4)
+                        ip = answer.data
+                        full_ip = ".".join(str(byte) for byte in ip)
+                        print(f"IP Address: {full_ip}")
 
-            #ip = packet.answers[0].data
-            #full_ip = ".".join([str(x) for x in ip])
-
-            #print(f"IP Address: {full_ip}")
+            print(f"IP Address: {full_ip}")
         except socket.timeout:
             print(f"Request timed out after {self.timeout} seconds")
         finally:
