@@ -38,13 +38,13 @@ class DNSClient:
 
         try:
             sock.sendto(query, (self.server, self.port))
-            response, _ = sock.recvfrom(1024)  # Receive the response from the DNS server
+            response, _ = sock.recvfrom(1024)  # receive the response from the DNS server that we're using
             print("response", response)
             
             packet = parse_packet(response)
 
             for answer in packet.answers:
-                    if answer.type_ == 1:  # Check if the answer type is A (IPv4)
+                    if answer.type_ == 1:  # check if the answer type is A (IPv4)
                         ip = answer.data
                         full_ip = ".".join(str(byte) for byte in ip)
                         print(f"IP Address: {full_ip}")
@@ -68,13 +68,12 @@ if __name__ == "__main__":
     group.add_argument("-mx", action="store_true", help="Query for MX record")
     group.add_argument("-ns", action="store_true", help="Query for NS record")
     
-    # Replace @server with server, and expect @server in the input
     parser.add_argument("server", help="DNS server IP address (use @ before IP)")
     parser.add_argument("name", help="Domain name to query")
     
     args = parser.parse_args()
 
-    # Handling the server argument (remove '@' if included)
+    # handling the server argument (remove '@' if included)
     server = args.server.lstrip("@") if args.server.startswith("@") else args.server  # Strip '@' if present
     
     query_type = DNS_QUERY_TYPES.get("MX" if args.mx else "NS" if args.ns else "A")
