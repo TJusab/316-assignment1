@@ -8,7 +8,7 @@ from record import Record
 
 @dataclass
 class Packet:
-    header: DNSHeader
+    header: Header
     questions: List[Question]
     answers: List[Record]
     authorities: List[Record]

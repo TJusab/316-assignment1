@@ -8,16 +8,17 @@ from io import BytesIO
 
 
 def encode_name(domain_name):
-    #the b indicates a string of bytes separated by \
     encoded = b""
-
+    # Split the domain name by '.' and encode each part
     for part in domain_name.encode("ascii").split(b"."):
-        encoded + bytes([len(part)]) + part
-    
-    return encoded + b"\x00" #signals the end of the name
+        encoded += bytes([len(part)]) + part
+    # Append a null byte to mark the end of the domain name
+    return encoded + b"\x00"
+
 
 def decode_name(reader):
     parts = []
+    print(reader)
     while (length := reader.read(1)[0]) != 0:
         if length & 0b1100_000:
             parts.append(decode_compressed(length, reader))
@@ -38,15 +39,16 @@ def decode_compressed(length, reader):
 def build_query(domain_name, record_type):
     name = encode_name(domain_name)
     #largest number with 16 bits
-    identifier = random.randint(0, 665535)
-    #flags equivalent to 0001 0000 0000 p7 of primer
-    header = Header(identifer=identifier, num_qs=1, flags=0x0100)
-    question = Question(name=name, type_='A', class_=1)
+    identifier = random.randint(0, 65535)
+    #flags equivalent to 0001 0000 0000 p2-3 of primer
+    header = Header(identifier=identifier, num_qs=1, flags=0x0100)
+    question = Question(name=name, type_=record_type, class_=1)
     return header.to_bytes() + question.to_bytes()
 
 def parse_header(response):
-    items = struct.unpack("!HHHHHH", response.read(12))
-    return Header(*items)
+    #read 12 bytes from the stream because header is 12 bytes
+    identifier, flags, num_qs, nums_as, num_auths, num_adds = struct.unpack("!HHHHHH", response.read(12))
+    return Header(identifier=identifier, flags=flags, num_qs=num_qs, nums_as=nums_as, num_auths=num_auths, num_adds=num_adds)
 
 def parse_question(reader):
     name = decode_name(reader)

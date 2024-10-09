@@ -1,29 +1,28 @@
 import argparse
 import socket
-import dataclasses
 import struct
-from utils import *
 from io import BytesIO
+from utils import *
 from record import Record
 
 DEFAULT_TIMEOUT = 5
 DEFAULT_MAX_RETRIES = 3
 DEFAULT_PORT = 53
-DEFAULT_QUERY_TYPE = "A"
+DEFAULT_QUERY_TYPE = 1
 DNS_QUERY_TYPES = {
     "A": 1,
+    "NS": 2,
     "MX": 15,
-    "NS": 2
 }
 RECORD_TYPES = {
     1: "A",
-    5: "CNAME",
     2: "NS",
+    5: "CNAME",
     15: "MX"
 }
 
 class DNSClient:
-    def __init__(self, server, name, timeout=DEFAULT_TIMEOUT, max_retries=DEFAULT_MAX_RETRIES, port=DEFAULT_PORT, query_type=DEFAULT_QUERY_TYPE["A"]):
+    def __init__(self, server, name, timeout=DEFAULT_TIMEOUT, max_retries=DEFAULT_MAX_RETRIES, port=DEFAULT_PORT, query_type=DEFAULT_QUERY_TYPE):
         self.server = server
         self.name = name
         self.timeout = timeout
@@ -32,25 +31,34 @@ class DNSClient:
         self.query_type = query_type
         
     def run(self):
-        query = build_query("www.example.com", DNS_QUERY_TYPES["A"])
-        #saying we're trying IPV4 with UDP protocol
-        sock = socket.socket(socket.AF_INET, socket.DOCK_DGRAM)
-        # send query to google's DNS on port 53 which is usually the DNS port
-        sock.sendto(query, ("8.8.8.8", 53))
+        query = build_query(self.name, self.query_type)
+        print("query", query)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(self.timeout)
 
-        response, _ = sock.recvfrom(1024) #check out the amount of bytes. why not receive a bunch more?
+        try:
+            sock.sendto(query, (self.server, self.port))
+            response, _ = sock.recvfrom(1024)  # Receive the response from the DNS server
+            print("response", response)
+            
+            reader = BytesIO(response)
+            header = parse_header(reader)
+            header.parse_flags()
+            print(header.error_flags())
 
-        reader = BytesIO(response)
-        parse_header(reader)
-        parse_question(reader)
-        parse_record(reader)
-        packet = parse_packet(response)
+            #parse_question(reader)
+            #records = parse_record(reader)
+            
+            #packet = parse_packet(response)
 
-        ip = packet.answers[0].data
-        full_ip = ".".join([str(x) for x in ip])
+            #ip = packet.answers[0].data
+            #full_ip = ".".join([str(x) for x in ip])
 
-        print(f"server: {self.server}\nname: {self.name}\ntimeout: {self.timeout}\nmax_retries: {self.max_retries}\nport: {self.port}\nquery: {self.query_type}")
-        
+            #print(f"IP Address: {full_ip}")
+        except socket.timeout:
+            print(f"Request timed out after {self.timeout} seconds")
+        finally:
+            sock.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="DNS Client")
@@ -65,18 +73,23 @@ if __name__ == "__main__":
     group.add_argument("-mx", action="store_true", help="Query for MX record")
     group.add_argument("-ns", action="store_true", help="Query for NS record")
     
-    parser.add_argument("@server", help="DNS server IP address")
+    # Replace @server with server, and expect @server in the input
+    parser.add_argument("server", help="DNS server IP address (use @ before IP)")
     parser.add_argument("name", help="Domain name to query")
     
     args = parser.parse_args()
+
+    # Handling the server argument (remove '@' if included)
+    server = args.server.lstrip("@") if args.server.startswith("@") else args.server  # Strip '@' if present
+    
+    query_type = DNS_QUERY_TYPES.get("MX" if args.mx else "NS" if args.ns else "A")
     
     client = DNSClient(
-        server=args.server,
+        server=server,
         name=args.name,
         timeout=args.timeout,
         max_retries=args.max_retries,
         port=args.port,
-        query_type="MX" if args.mx else "NS" if args.ns else "A"
+        query_type=query_type
     )
     client.run()
-    
