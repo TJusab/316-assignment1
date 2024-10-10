@@ -43,7 +43,7 @@ class DNSClient:
 
         while retries < self.max_retries:
             try:
-                retries += 1
+                
                 # Create a new socket in each retry attempt
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.settimeout(self.timeout)
@@ -93,6 +93,7 @@ class DNSClient:
 
                     # If the response was successful, exit the loop
                     break  
+                else: retries += 1
 
             except socket.timeout:
                 print(f"Request timed out after {self.timeout} seconds (attempt {retries})")
