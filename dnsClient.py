@@ -44,7 +44,6 @@ class DNSClient:
             sock.sendto(query, (self.server, self.port))
             response, _ = sock.recvfrom(1024)  # receive the response from the DNS server that we're using
             #print("response", response)
-            print(type(bytes))
             
             packet = parse_packet(response)
 
@@ -64,17 +63,12 @@ class DNSClient:
                             full_ip = ".".join(str(byte) for byte in ip)
                             print(f"IP \t{full_ip}\t{answer.ttl}\t {auth}")
                         elif answer.type_ == 2: #NS type
-                            print(answer.data)
-                            alias = BytesIO(answer.data)
-                            print(f"NS \t [alias] \t {answer.ttl} \t {auth}")
+                            print(f"NS \t {answer.alias_str} \t {answer.ttl} \t {auth}")
                         elif answer.type_ == 5: #CNAME the RDATE is the name
-                             print(answer.data)
-                             alias = BytesIO(answer.data)
-                             #name = decode_name(alias)
-                             print(f"CNAME \t [alias] \t {answer.ttl} \t {auth}")
+                            print(f"CNAME \t {answer.alias_str} \t {answer.ttl} \t {auth}")
                         elif answer.type_ == 15: #MX
                              pref = struct.unpack("!I", answer.data[:4]) #the preference is the first 16 bits 
-                             print(f"MX \t [alias] \t {pref} \t {answer.ttl} \t {auth}")
+                             print(f"MX \t {answer.alias_str} \t {pref} \t {answer.ttl} \t {auth}")
                 
             if packet.additionals:
                  print(f"***Additional Section ({len(packet.additionals)} records)***")

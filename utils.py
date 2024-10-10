@@ -19,22 +19,23 @@ def encode_name(domain_name):
 def decode_name(reader):
     parts = []
     while (length := reader.read(1)[0]) != 0:
-        if length & 0b1100_000: #if there's the presence of an offset then we know it's been compressed
+        if length & 0b1100_0000:  # Check for compression offset
             parts.append(decode_compressed(length, reader))
             break
         else:
-            parts.append(reader.read(length))
-    return parts
+            parts.append(reader.read(length).decode("ascii"))
+
+    return ".".join(parts)
 
 def decode_compressed(length, reader):
     pointer_bytes = bytes([length & 0b0011_1111]) + reader.read(1)
     pointer = struct.unpack("!H", pointer_bytes)[0]
-    current = reader.tell()
-    reader.seek(pointer)
-    result = decode_name(reader)
-    reader.seek(current)
+    current = reader.tell()  # Save the current position
+    reader.seek(pointer)  # Jump to the compressed name location
+    result = decode_name(reader)  # Decode the name at the pointer
+    reader.seek(current)  # Return to the original position
 
-    return result
+    return result  # Return the decoded domain name as a string
 
 def build_query(domain_name, record_type):
     name = encode_name(domain_name)
@@ -47,9 +48,7 @@ def build_query(domain_name, record_type):
 
 def parse_header(response):
     #read 12 bytes from the stream because header is 12 bytes
-    
     identifier, flags, num_qs, num_as, num_auths, num_adds = struct.unpack("!HHHHHH", response.read(12))
-    print("nums_adds", num_adds)
     return Header(identifier=identifier, flags=flags, num_qs=num_qs, num_as=num_as, num_auths=num_auths, num_adds=num_adds)
 
 def parse_question(reader):
@@ -62,13 +61,25 @@ def parse_question(reader):
     return Question(name, type_, class_)
 
 def parse_record(reader):
+    # Decode the domain name (the owner of the record)
     name = decode_name(reader)
-    #there are four things to read: (type, class, ttl, data length), p5 of the primer
-    data = reader.read(10)
-    type_, class_, ttl, data_len = struct.unpack("!HHIH", data)
 
-    data = reader.read(data_len)
-    return Record(name, type_,class_, ttl, data)
+    # Read the next 10 bytes: type, class, TTL, and data length
+    record_header = reader.read(10)
+    type_, class_, ttl, data_len = struct.unpack("!HHIH", record_header)
+    alias, data = None, None
+
+    # If the type is CNAME or NS, immediately decode the alias from the data section
+    if type_ == 2 or type_ == 5:  
+        alias = decode_name(reader)
+    elif type_ == 15:
+        data = reader.read(4)
+        alias = decode_name(reader)
+    else:
+        data = reader.read(data_len)
+
+    return Record(name, type_, class_, ttl, data, alias)
+
 
 def parse_packet(data):
     reader = BytesIO(data)
