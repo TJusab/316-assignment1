@@ -4,6 +4,7 @@ from io import BytesIO
 from utils import *
 from record import Record
 import struct
+import time
 
 DEFAULT_TIMEOUT = 5
 DEFAULT_MAX_RETRIES = 3
@@ -33,52 +34,82 @@ class DNSClient:
     def run(self):
         print("DnsClient sending request for", self.name)
         print("Server:", self.server)
-        print("Request type:",RECORD_TYPES[self.query_type])
+        print("Request type:", RECORD_TYPES[self.query_type])
 
         query = build_query(self.name, self.query_type)
-        #print("query", query)
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.settimeout(self.timeout)
+        retries = 0
+        start_time = time.time()  # Start tracking the total time
+        
 
-        try:
-            sock.sendto(query, (self.server, self.port))
-            response, _ = sock.recvfrom(1024)  # receive the response from the DNS server that we're using
-            #print("response", response)
+        while retries < self.max_retries:
             
-            packet = parse_packet(response)
+            try:
+                retries += 1
+                print("do i get here?")
+                # Create a new socket in each retry attempt
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.settimeout(self.timeout)
 
-            if packet.header.error_flags() == "No error condition":
-                print("Response received after [time] seconds ([num-retries] retries)")
+                sock.sendto(query, (self.server, self.port))
+                start_query_time = time.time()  # Track the time for this specific query
 
-            if packet.answers: 
-                print(f"***Answer Section ({len(packet.answers)} records)***")
-                for answer in packet.answers:
-                        auth = None
-                        if packet.header.flags_decoded['AA'] == 0:
-                                auth = "auth"
-                        else:
-                            auth = "noauth"
-                        if answer.type_ == 1:  # check if the answer type is A (IPv4)
-                            ip = answer.data
-                            full_ip = ".".join(str(byte) for byte in ip)
-                            print(f"IP \t{full_ip}\t{answer.ttl}\t {auth}")
-                        elif answer.type_ == 2: #NS type
-                            print(f"NS \t {answer.alias_str} \t {answer.ttl} \t {auth}")
-                        elif answer.type_ == 5: #CNAME the RDATE is the name
-                            print(f"CNAME \t {answer.alias_str} \t {answer.ttl} \t {auth}")
-                        elif answer.type_ == 15: #MX
-                             pref = struct.unpack("!I", answer.data[:4]) #the preference is the first 16 bits 
-                             print(f"MX \t {answer.alias_str} \t {pref} \t {answer.ttl} \t {auth}")
-                
-            if packet.additionals:
-                 print(f"***Additional Section ({len(packet.additionals)} records)***")
-            else: 
-                 print("NOTFOUND")
+                response, _ = sock.recvfrom(1024)  # receive the response
+                response_time = time.time() - start_query_time  # Calculate response time
 
-        except socket.timeout:
-            print(f"Request timed out after {self.timeout} seconds")
-        finally:
-            sock.close()
+                packet = parse_packet(response)
+
+                print("error flags", packet.header.error_flags())
+
+                if packet.header.error_flags() == "No error condition":
+                    print(f"Response received after {response_time:.4f} seconds ({retries} retries)")
+
+                    if packet.answers:
+                        print(f"***Answer Section ({len(packet.answers)} records)***")
+                        for answer in packet.answers:
+                            auth = "auth" if packet.header.flags_decoded['AA'] == 0 else "noauth"
+                            if answer.type_ == 1:  # A (IPv4)
+                                ip = ".".join(str(byte) for byte in answer.data)
+                                print(f"IP \t{ip}\t{answer.ttl}\t {auth}")
+                            elif answer.type_ == 2:  # NS
+                                print(f"NS \t {answer.alias} \t {answer.ttl} \t {auth}")
+                            elif answer.type_ == 5:  # CNAME
+                                print(f"CNAME \t {answer.alias} \t {answer.ttl} \t {auth}")
+                            elif answer.type_ == 15:  # MX
+                                pref = struct.unpack("!H", answer.data[:2])[0]  # Preference is the first 16 bits
+                                print(f"MX \t {answer.alias} \t {pref} \t {answer.ttl} \t {auth}")
+
+                    if packet.additionals:
+                        print(f"***Additional Section ({len(packet.additionals)} records)***")
+                        for additional in packet.additionals:
+                            auth = "auth" if packet.header.flags_decoded['AA'] == 0 else "noauth"
+                            if answer.type_ == 1:  # A (IPv4)
+                                ip = ".".join(str(byte) for byte in answer.data)
+                                print(f"IP \t{ip}\t{answer.ttl}\t {auth}")
+                            elif answer.type_ == 2:  # NS
+                                print(f"NS \t {answer.alias} \t {answer.ttl} \t {auth}")
+                            elif answer.type_ == 5:  # CNAME
+                                print(f"CNAME \t {answer.alias} \t {answer.ttl} \t {auth}")
+                            elif answer.type_ == 15:  # MX
+                                pref = struct.unpack("!H", answer.data[:2])[0]  # Preference is the first 16 bits
+                                print(f"MX \t {answer.alias} \t {pref} \t {answer.ttl} \t {auth}")
+                    else:
+                        print("NOTFOUND")
+
+                    # If the response was successful, exit the loop
+                    break  
+
+            except socket.timeout:
+                print(f"Request timed out after {self.timeout} seconds (attempt {retries})")
+                if retries >= self.max_retries:
+                    print("Maximum retries reached. Exiting.")
+                continue
+
+            finally:
+                # Close the socket after each attempt
+                sock.close()
+
+        total_time = time.time() - start_time  
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="DNS Client")

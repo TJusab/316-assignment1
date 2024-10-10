@@ -44,6 +44,7 @@ def build_query(domain_name, record_type):
     #flags equivalent to 0001 0000 0000 p2-3 of primer
     header = Header(identifier=identifier, num_qs=1, flags=0x0100)
     question = Question(name=name, type_=record_type, class_=1)
+    print("question to byte", question.to_bytes)
     return header.to_bytes() + question.to_bytes()
 
 def parse_header(response):

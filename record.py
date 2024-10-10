@@ -12,7 +12,7 @@ class Record:
     class_: int
     ttl: int
     data: bytes
-    alias_str: str
+    alias: str
 
 
 
