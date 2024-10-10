@@ -10,7 +10,7 @@ header:
     identifier
     flags
     num_qs
-    nums_as
+    num_as
     num_auths
     num_adds
     to_bytes()

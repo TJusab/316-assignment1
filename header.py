@@ -6,13 +6,13 @@ class Header:
     identifier: int
     flags: int
     num_qs: int = 0
-    nums_as: int = 0
+    num_as: int = 0
     num_auths: int = 0
     num_adds: int = 0
     flags_decoded = {}
 
     def to_bytes(self):
-        return struct.pack("!HHHHHH", self.identifier,  self.flags, self.num_qs,  self.nums_as,  self.num_auths,  self.num_adds)
+        return struct.pack("!HHHHHH", self.identifier,  self.flags, self.num_qs,  self.num_as,  self.num_auths,  self.num_adds)
 
     def parse_flags(self):
         # Extract each field by shifting and masking the bits

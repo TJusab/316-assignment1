@@ -1,9 +1,9 @@
 import argparse
 import socket
-import struct
 from io import BytesIO
 from utils import *
 from record import Record
+import struct
 
 DEFAULT_TIMEOUT = 5
 DEFAULT_MAX_RETRIES = 3
@@ -31,25 +31,56 @@ class DNSClient:
         self.query_type = query_type
         
     def run(self):
+        print("DnsClient sending request for", self.name)
+        print("Server:", self.server)
+        print("Request type:",RECORD_TYPES[self.query_type])
+
         query = build_query(self.name, self.query_type)
-        print("query", query)
+        #print("query", query)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.settimeout(self.timeout)
 
         try:
             sock.sendto(query, (self.server, self.port))
             response, _ = sock.recvfrom(1024)  # receive the response from the DNS server that we're using
-            print("response", response)
+            #print("response", response)
+            print(type(bytes))
             
             packet = parse_packet(response)
 
-            for answer in packet.answers:
-                    if answer.type_ == 1:  # check if the answer type is A (IPv4)
-                        ip = answer.data
-                        full_ip = ".".join(str(byte) for byte in ip)
-                        print(f"IP Address: {full_ip}")
+            if packet.header.error_flags() == "No error condition":
+                print("Response received after [time] seconds ([num-retries] retries)")
 
-            print(f"IP Address: {full_ip}")
+            if packet.answers: 
+                print(f"***Answer Section ({len(packet.answers)} records)***")
+                for answer in packet.answers:
+                        auth = None
+                        if packet.header.flags_decoded['AA'] == 0:
+                                auth = "auth"
+                        else:
+                            auth = "noauth"
+                        if answer.type_ == 1:  # check if the answer type is A (IPv4)
+                            ip = answer.data
+                            full_ip = ".".join(str(byte) for byte in ip)
+                            print(f"IP \t{full_ip}\t{answer.ttl}\t {auth}")
+                        elif answer.type_ == 2: #NS type
+                            print(answer.data)
+                            alias = BytesIO(answer.data)
+                            print(f"NS \t [alias] \t {answer.ttl} \t {auth}")
+                        elif answer.type_ == 5: #CNAME the RDATE is the name
+                             print(answer.data)
+                             alias = BytesIO(answer.data)
+                             #name = decode_name(alias)
+                             print(f"CNAME \t [alias] \t {answer.ttl} \t {auth}")
+                        elif answer.type_ == 15: #MX
+                             pref = struct.unpack("!I", answer.data[:4]) #the preference is the first 16 bits 
+                             print(f"MX \t [alias] \t {pref} \t {answer.ttl} \t {auth}")
+                
+            if packet.additionals:
+                 print(f"***Additional Section ({len(packet.additionals)} records)***")
+            else: 
+                 print("NOTFOUND")
+
         except socket.timeout:
             print(f"Request timed out after {self.timeout} seconds")
         finally:

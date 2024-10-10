@@ -19,12 +19,11 @@ def encode_name(domain_name):
 def decode_name(reader):
     parts = []
     while (length := reader.read(1)[0]) != 0:
-        if length & 0b1100_000:
+        if length & 0b1100_000: #if there's the presence of an offset then we know it's been compressed
             parts.append(decode_compressed(length, reader))
             break
         else:
             parts.append(reader.read(length))
-        
     return parts
 
 def decode_compressed(length, reader):
@@ -49,17 +48,17 @@ def build_query(domain_name, record_type):
 def parse_header(response):
     #read 12 bytes from the stream because header is 12 bytes
     
-    identifier, flags, num_qs, nums_as, num_auths, num_adds = struct.unpack("!HHHHHH", response.read(12))
-    print("number of answers", nums_as)
-    return Header(identifier=identifier, flags=flags, num_qs=num_qs, nums_as=nums_as, num_auths=num_auths, num_adds=num_adds)
+    identifier, flags, num_qs, num_as, num_auths, num_adds = struct.unpack("!HHHHHH", response.read(12))
+    print("nums_adds", num_adds)
+    return Header(identifier=identifier, flags=flags, num_qs=num_qs, num_as=num_as, num_auths=num_auths, num_adds=num_adds)
 
 def parse_question(reader):
     name = decode_name(reader)
     data = reader.read(4)
     type_, class_ = struct.unpack("!HH", data)
-    print("name from parse_question", name)
-    print("type", type_)
-    print("class", class_)
+    #print("name from parse_question", name)
+    #print("type", type_)
+    #print("class", class_)
     return Question(name, type_, class_)
 
 def parse_record(reader):
@@ -75,9 +74,8 @@ def parse_packet(data):
     reader = BytesIO(data)
     header = parse_header(reader)
     header.parse_flags()
-    print(header.error_flags())
     questions = [parse_question(reader) for _ in range(header.num_qs)]
-    answers = [parse_record(reader) for _ in range(header.nums_as)]
+    answers = [parse_record(reader) for _ in range(header.num_as)]
     authorities = [parse_record(reader) for _ in range(header.num_auths)]
     additionals = [parse_record(reader) for _ in range(header.num_adds)]
 
