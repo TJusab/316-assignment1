@@ -13,6 +13,7 @@ class Record:
     ttl: int
     data: bytes
     alias: str
+    mx_preference: int = None  
 
 
 

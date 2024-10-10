@@ -42,10 +42,8 @@ class DNSClient:
         
 
         while retries < self.max_retries:
-            
             try:
                 retries += 1
-                print("do i get here?")
                 # Create a new socket in each retry attempt
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.settimeout(self.timeout)
@@ -53,7 +51,7 @@ class DNSClient:
                 sock.sendto(query, (self.server, self.port))
                 start_query_time = time.time()  # Track the time for this specific query
 
-                response, _ = sock.recvfrom(1024)  # receive the response
+                response, _ = sock.recvfrom(4096)  # receive the response
                 response_time = time.time() - start_query_time  # Calculate response time
 
                 packet = parse_packet(response)
@@ -75,23 +73,21 @@ class DNSClient:
                             elif answer.type_ == 5:  # CNAME
                                 print(f"CNAME \t {answer.alias} \t {answer.ttl} \t {auth}")
                             elif answer.type_ == 15:  # MX
-                                pref = struct.unpack("!H", answer.data[:2])[0]  # Preference is the first 16 bits
-                                print(f"MX \t {answer.alias} \t {pref} \t {answer.ttl} \t {auth}")
+                                print(f"MX \t {answer.alias} \t {answer.mx_preference} \t {answer.ttl} \t {auth}")
 
                     if packet.additionals:
                         print(f"***Additional Section ({len(packet.additionals)} records)***")
                         for additional in packet.additionals:
                             auth = "auth" if packet.header.flags_decoded['AA'] == 0 else "noauth"
-                            if answer.type_ == 1:  # A (IPv4)
-                                ip = ".".join(str(byte) for byte in answer.data)
-                                print(f"IP \t{ip}\t{answer.ttl}\t {auth}")
-                            elif answer.type_ == 2:  # NS
-                                print(f"NS \t {answer.alias} \t {answer.ttl} \t {auth}")
+                            if additional.type_ == 1:  # A (IPv4)
+                                ip = ".".join(str(byte) for byte in additional.data)
+                                print(f"IP \t{ip}\t{additional.ttl}\t {auth}")
+                            elif additional.type_ == 2:  # NS
+                                print(f"NS \t {additional.alias} \t {additional.ttl} \t {auth}")
                             elif answer.type_ == 5:  # CNAME
-                                print(f"CNAME \t {answer.alias} \t {answer.ttl} \t {auth}")
+                                print(f"CNAME \t {additional.alias} \t {additional.ttl} \t {auth}")
                             elif answer.type_ == 15:  # MX
-                                pref = struct.unpack("!H", answer.data[:2])[0]  # Preference is the first 16 bits
-                                print(f"MX \t {answer.alias} \t {pref} \t {answer.ttl} \t {auth}")
+                                print(f"MX \t {additional.alias} \t {additional.mx_preference} \t {additional.ttl} \t {auth}")
                     else:
                         print("NOTFOUND")
 

@@ -44,7 +44,6 @@ def build_query(domain_name, record_type):
     #flags equivalent to 0001 0000 0000 p2-3 of primer
     header = Header(identifier=identifier, num_qs=1, flags=0x0100)
     question = Question(name=name, type_=record_type, class_=1)
-    print("question to byte", question.to_bytes)
     return header.to_bytes() + question.to_bytes()
 
 def parse_header(response):
@@ -62,24 +61,24 @@ def parse_question(reader):
     return Question(name, type_, class_)
 
 def parse_record(reader):
-    # Decode the domain name (the owner of the record)
     name = decode_name(reader)
-
-    # Read the next 10 bytes: type, class, TTL, and data length
     record_header = reader.read(10)
     type_, class_, ttl, data_len = struct.unpack("!HHIH", record_header)
+    
     alias, data = None, None
+    mx_preference = None
 
-    # If the type is CNAME or NS, immediately decode the alias from the data section
-    if type_ == 2 or type_ == 5:  
-        alias = decode_name(reader)
-    elif type_ == 15:
-        data = reader.read(4)
+    if type_ == 15:  # MX record
+        mx_preference = reader.read(2)
+        mx_preference = struct.unpack("!H", mx_preference[:2])[0]
+        exchange = decode_name(reader)
+        alias = exchange
+    elif type_ in [2, 5]:  # NS or CNAME
         alias = decode_name(reader)
     else:
         data = reader.read(data_len)
 
-    return Record(name, type_, class_, ttl, data, alias)
+    return Record(name, type_, class_, ttl, data, alias, mx_preference)
 
 
 def parse_packet(data):
