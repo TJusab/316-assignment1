@@ -37,13 +37,13 @@ class DNSClient:
         print("Request type:", RECORD_TYPES[self.query_type])
 
         query = build_query(self.name, self.query_type)
-        retries = 0
+        retries = -1
         start_time = time.time()  # Start tracking the total time
         
 
         while retries < self.max_retries:
             try:
-                
+                retries += 1
                 # Create a new socket in each retry attempt
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.settimeout(self.timeout)
@@ -53,10 +53,7 @@ class DNSClient:
 
                 response, _ = sock.recvfrom(4096)  # receive the response
                 response_time = time.time() - start_query_time  # Calculate response time
-
                 packet = parse_packet(response)
-
-                print("error flags", packet.header.error_flags())
 
                 if packet.header.error_flags() == "No error condition":
                     print(f"Response received after {response_time:.4f} seconds ({retries} retries)")
@@ -93,7 +90,6 @@ class DNSClient:
 
                     # If the response was successful, exit the loop
                     break  
-                else: retries += 1
 
             except socket.timeout:
                 print(f"Request timed out after {self.timeout} seconds (attempt {retries})")
