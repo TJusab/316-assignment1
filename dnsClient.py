@@ -81,9 +81,9 @@ class DNSClient:
                                 print(f"IP \t{ip}\t{additional.ttl}\t {auth}")
                             elif additional.type_ == 2:  # NS
                                 print(f"NS \t {additional.alias} \t {additional.ttl} \t {auth}")
-                            elif answer.type_ == 5:  # CNAME
+                            elif additional.type_ == 5:  # CNAME
                                 print(f"CNAME \t {additional.alias} \t {additional.ttl} \t {auth}")
-                            elif answer.type_ == 15:  # MX
+                            elif additional.type_ == 15:  # MX
                                 print(f"MX \t {additional.alias} \t {additional.mx_preference} \t {additional.ttl} \t {auth}")
                     else:
                         print("NOTFOUND")
