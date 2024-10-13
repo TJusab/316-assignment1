@@ -91,7 +91,7 @@ class DNSClient:
                     break
                 else:
                     # print error and stop retrying if errorCode is not "No error condition"
-                    print(f"ERROR \t {errorCode}. Exiting.")
+                    print(f"ERROR \t Unexpected Response. {errorCode}. Exiting.")
                     break
 
             except socket.timeout:
