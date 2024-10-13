@@ -106,9 +106,21 @@ class DNSClient:
 
         total_time = time.time() - start_time  
 
+import argparse
+import sys
+
+# Custom ArgumentParser to handle errors
+class CustomArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        print(f"ERROR\tIncorrect input syntax: {message}")
+        self.print_usage()
+         # status code 2 to indicate an error
+        sys.exit(2) 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="DNS Client")
+    # Use the custom parser
+    parser = CustomArgumentParser(description="DNS Client")
+    
     parser.add_argument("-t", "--timeout", type=int, default=DEFAULT_TIMEOUT, 
                         help=f"Timeout value to wait before retransmitting in seconds (default: {DEFAULT_TIMEOUT})")
     parser.add_argument("-r", "--max-retries", type=int, default=DEFAULT_MAX_RETRIES,
