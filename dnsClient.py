@@ -55,7 +55,8 @@ class DNSClient:
                 response_time = time.time() - start_query_time  # Calculate response time
                 packet = parse_packet(response)
 
-                if packet.header.error_flags() == "No error condition":
+                errorCode = packet.header.error_flags()
+                if  errorCode == "No error condition":
                     print(f"Response received after {response_time:.4f} seconds ({retries} retries)")
 
                     if packet.answers:
@@ -90,11 +91,13 @@ class DNSClient:
 
                     # If the response was successful, exit the loop
                     break  
-
+                else:
+                    return "ERROR \t Unexpected response" + errorCode
+                
             except socket.timeout:
                 print(f"Request timed out after {self.timeout} seconds (attempt {retries})")
                 if retries >= self.max_retries:
-                    print("Maximum retries reached. Exiting.")
+                    print("ERROR \t Maximum retries reached. Exiting.")
                 continue
 
             finally:
