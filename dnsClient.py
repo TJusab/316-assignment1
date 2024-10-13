@@ -107,7 +107,7 @@ class DNSClient:
 import argparse
 import sys
 
-# Custom ArgumentParser to handle errors
+# custom ArgumentParser to handle syntax errors
 class CustomArgumentParser(argparse.ArgumentParser):
     def error(self, message):
         print(f"ERROR\tIncorrect input syntax: {message}")
@@ -116,7 +116,7 @@ class CustomArgumentParser(argparse.ArgumentParser):
         sys.exit(2) 
 
 if __name__ == "__main__":
-    # Use the custom parser
+    # use the custom parser
     parser = CustomArgumentParser(description="DNS Client")
     
     parser.add_argument("-t", "--timeout", type=int, default=DEFAULT_TIMEOUT, 
