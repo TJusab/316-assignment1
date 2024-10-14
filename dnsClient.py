@@ -34,25 +34,24 @@ class DNSClient:
         print("Request type:", RECORD_TYPES[self.query_type])
 
         query = build_query(self.name, self.query_type)
-        retries = -1
-        start_time = time.time()  # Start tracking the total time
-        
+        retries = 0
+        start_time = time.time()  # start tracking the total time
 
-        while retries < self.max_retries:
+        while retries <= self.max_retries:
             try:
-                retries += 1
-                # Create a new socket in each retry attempt
+                # create a new socket in each retry attempt
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.settimeout(self.timeout)
 
                 sock.sendto(query, (self.server, self.port))
-                start_query_time = time.time()  # Track the time for this specific query
+                start_query_time = time.time()  # track the time for this specific query
 
                 response, _ = sock.recvfrom(4096)  # receive the response
-                response_time = time.time() - start_query_time  # Calculate response time
+                response_time = time.time() - start_query_time  # calculate response time
                 packet = parse_packet(response)
 
-                if packet.header.error_flags() == "No error condition":
+                errorCode = packet.header.error_flags()
+                if errorCode == "No error condition":
                     print(f"Response received after {response_time:.4f} seconds ({retries} retries)")
 
                     if packet.answers:
@@ -85,24 +84,38 @@ class DNSClient:
                     else:
                         print("NOTFOUND")
 
-                    # If the response was successful, exit the loop
-                    break  
+                    # successful response, exit the loop
+                    break
+                else:
+                    # print error and stop retrying if errorCode is not "No error condition"
+                    print(f"ERROR \t Unexpected Response. {errorCode}. Exiting.")
+                    break
 
             except socket.timeout:
+                retries += 1
                 print(f"Request timed out after {self.timeout} seconds (attempt {retries})")
-                if retries >= self.max_retries:
-                    print("Maximum retries reached. Exiting.")
-                continue
-
+                if retries > self.max_retries:
+                    print("ERROR \t Maximum retries reached. Exiting.")
             finally:
-                # Close the socket after each attempt
+                # close the socket after each attempt
                 sock.close()
 
-        total_time = time.time() - start_time  
 
+import argparse
+import sys
+
+# custom ArgumentParser to handle syntax errors
+class CustomArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        print(f"ERROR\tIncorrect input syntax: {message}")
+        self.print_usage()
+         # status code 2 to indicate an error
+        sys.exit(2) 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="DNS Client")
+    # use the custom parser
+    parser = CustomArgumentParser(description="DNS Client")
+    
     parser.add_argument("-t", "--timeout", type=int, default=DEFAULT_TIMEOUT, 
                         help=f"Timeout value to wait before retransmitting in seconds (default: {DEFAULT_TIMEOUT})")
     parser.add_argument("-r", "--max-retries", type=int, default=DEFAULT_MAX_RETRIES,
