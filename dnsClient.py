@@ -1,9 +1,6 @@
 import argparse
 import socket
-from io import BytesIO
 from utils import *
-from record import Record
-import struct
 import time
 
 DEFAULT_TIMEOUT = 5

@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-import dataclasses
-import struct
 from typing import List
 from header import Header
 from question import Question

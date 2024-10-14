@@ -1,9 +1,4 @@
 from dataclasses import dataclass
-import dataclasses
-import struct
-from header import Header
-from header import Header
-from question import Question
 
 @dataclass
 class Record:

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import dataclasses
 import struct
 
 @dataclass
