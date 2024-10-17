@@ -9,6 +9,4 @@ class Record:
     data: bytes
     alias: str
     mx_preference: int = None  
-
-
-
+    

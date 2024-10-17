@@ -1,0 +1,112 @@
+Running: /Users/tayba/.pyenv/versions/3.9.19/bin/python3 dnsClient.py @8.8.8.8 example.com
+DnsClient sending request for example.com
+Server: 8.8.8.8
+Request type: A
+Response received after 0.0183 seconds (0 retries)
+***Answer Section (1 records)***
+IP 	93.184.215.14	1174	 auth
+NOTFOUND
+
+--------------------------------------------------
+Running: /Users/tayba/.pyenv/versions/3.9.19/bin/python3 dnsClient.py -mx @8.8.8.8 gmail.com
+DnsClient sending request for gmail.com
+Server: 8.8.8.8
+Request type: MX
+Response received after 0.0245 seconds (0 retries)
+***Answer Section (5 records)***
+MX 	 gmail-smtp-in.l.google.com 	 5 	 3593 	 auth
+MX 	 alt2.gmail-smtp-in.l.google.com 	 20 	 3593 	 auth
+MX 	 alt1.gmail-smtp-in.l.google.com 	 10 	 3593 	 auth
+MX 	 alt3.gmail-smtp-in.l.google.com 	 30 	 3593 	 auth
+MX 	 alt4.gmail-smtp-in.l.google.com 	 40 	 3593 	 auth
+NOTFOUND
+
+--------------------------------------------------
+Running: /Users/tayba/.pyenv/versions/3.9.19/bin/python3 dnsClient.py -ns @8.8.8.8 amazon.com
+DnsClient sending request for amazon.com
+Server: 8.8.8.8
+Request type: NS
+Response received after 0.0441 seconds (0 retries)
+***Answer Section (8 records)***
+NS 	 ns1.amzndns.net 	 7200 	 auth
+NS 	 ns2.amzndns.co.uk 	 7200 	 auth
+NS 	 ns2.amzndns.net 	 7200 	 auth
+NS 	 ns1.amzndns.co.uk 	 7200 	 auth
+NS 	 ns2.amzndns.org 	 7200 	 auth
+NS 	 ns2.amzndns.com 	 7200 	 auth
+NS 	 ns1.amzndns.com 	 7200 	 auth
+NS 	 ns1.amzndns.org 	 7200 	 auth
+NOTFOUND
+
+--------------------------------------------------
+Running: /Users/tayba/.pyenv/versions/3.9.19/bin/python3 dnsClient.py -mx -t 2 -r 2 @8.8.8.8 microsoft.com
+DnsClient sending request for microsoft.com
+Server: 8.8.8.8
+Request type: MX
+Response received after 0.0297 seconds (0 retries)
+***Answer Section (1 records)***
+MX 	 microsoft-com.mail.protection.outlook.com 	 10 	 7 	 auth
+NOTFOUND
+
+--------------------------------------------------
+Running: /Users/tayba/.pyenv/versions/3.9.19/bin/python3 dnsClient.py -t 1 @132.216.177.160 example.com
+DnsClient sending request for example.com
+Server: 132.216.177.160
+Request type: A
+Request timed out after 1 seconds (attempt 1)
+Request timed out after 1 seconds (attempt 2)
+Request timed out after 1 seconds (attempt 3)
+Request timed out after 1 seconds (attempt 4)
+ERROR 	 Maximum retries reached. Exiting.
+
+--------------------------------------------------
+Running: /Users/tayba/.pyenv/versions/3.9.19/bin/python3 dnsClient.py -r 7 -p 8080 @8.8.8.8 example.com
+DnsClient sending request for example.com
+Server: 8.8.8.8
+Request type: A
+Request timed out after 5 seconds (attempt 1)
+Request timed out after 5 seconds (attempt 2)
+Request timed out after 5 seconds (attempt 3)
+Request timed out after 5 seconds (attempt 4)
+Request timed out after 5 seconds (attempt 5)
+Request timed out after 5 seconds (attempt 6)
+Request timed out after 5 seconds (attempt 7)
+Request timed out after 5 seconds (attempt 8)
+ERROR 	 Maximum retries reached. Exiting.
+
+--------------------------------------------------
+Running: /Users/tayba/.pyenv/versions/3.9.19/bin/python3 dnsClient.py @8.8.8.8 nonexistent-domain-12345.com
+DnsClient sending request for nonexistent-domain-12345.com
+Server: 8.8.8.8
+Request type: A
+ERROR 	 Unexpected Response. Name error: meaningful only for responses from an authoritative name server, this code signifies that the domain name referenced in the query does not exist. Exiting.
+
+--------------------------------------------------
+Running: /Users/tayba/.pyenv/versions/3.9.19/bin/python3 dnsClient.py @192.0.2.1 example.com
+DnsClient sending request for example.com
+Server: 192.0.2.1
+Request type: A
+Request timed out after 5 seconds (attempt 1)
+Request timed out after 5 seconds (attempt 2)
+Request timed out after 5 seconds (attempt 3)
+Request timed out after 5 seconds (attempt 4)
+ERROR 	 Maximum retries reached. Exiting.
+
+--------------------------------------------------
+Running: /Users/tayba/.pyenv/versions/3.9.19/bin/python3 dnsClient.py @1.1.1.1 cloudflare.com
+DnsClient sending request for cloudflare.com
+Server: 1.1.1.1
+Request type: A
+Response received after 0.0255 seconds (0 retries)
+***Answer Section (2 records)***
+IP 	104.16.133.229	124	 auth
+IP 	104.16.132.229	124	 auth
+NOTFOUND
+
+--------------------------------------------------
+Running: /Users/tayba/.pyenv/versions/3.9.19/bin/python3 dnsClient.py -t -p @8.8.8.8 example.com
+ERROR	Incorrect input syntax: argument -t/--timeout: expected one argument
+usage: dnsClient.py [-h] [-t TIMEOUT] [-r MAX_RETRIES] [-p PORT] [-mx | -ns]
+                    server name
+
+--------------------------------------------------

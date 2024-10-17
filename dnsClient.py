@@ -144,5 +144,5 @@ if __name__ == "__main__":
         max_retries=args.max_retries,
         port=args.port,
         query_type=query_type
-    )
+    )   
     client.run()
